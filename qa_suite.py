@@ -12,6 +12,12 @@ Outputs:
 import os
 import sys
 import time
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 import json
 import socket
 import logging
