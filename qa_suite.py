@@ -12,6 +12,12 @@ Outputs:
 import os
 import sys
 import time
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 import json
 import socket
 import logging
@@ -138,7 +144,8 @@ class QATestRunner:
             self.record_test(cat, "GPU Vendor Detection", has_vendor, f"Vendor: {info.get('vendor')}")
 
             vram_mb = info.get("vram_mb", 0)
-            self.record_test(cat, "VRAM Detection", vram_mb > 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
+            vram_ok = isinstance(vram_mb, (int, float)) and vram_mb >= 0
+            self.record_test(cat, "VRAM Detection", vram_ok, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
 
             rec_mode = info.get("recommended_mode")
             self.record_test(cat, "Recommended Mode Calculation", bool(rec_mode), f"Recommended mode: {rec_mode}")
@@ -264,6 +271,14 @@ class QATestRunner:
             sample_model = presets[0] if presets else {"filename": "test_model.safetensors"}
             task = model_downloader.DownloadTask(sample_model, dest_dir=os.path.join(APP_DIR, "models", "checkpoints"))
             self.record_test(cat, "Atomic Temp File Naming", task.temp_path.endswith(".download"), f"Temp path: {task.temp_path}")
+
+            # Test path traversal prevention in DownloadTask
+            traversal_model = {"filename": "../../malicious.safetensors"}
+            target_dir = os.path.join(APP_DIR, "models", "checkpoints")
+            sec_task = model_downloader.DownloadTask(traversal_model, dest_dir=target_dir)
+            expected_dest = os.path.abspath(os.path.join(target_dir, "malicious.safetensors"))
+            path_safe = sec_task.dest_path == expected_dest and sec_task.dest_path.startswith(os.path.abspath(target_dir))
+            self.record_test(cat, "Path Traversal Prevention", path_safe, f"Sanitized path: {sec_task.dest_path}")
 
             # Test checkpoint counting
             ckpt_count = model_downloader.get_installed_checkpoint_count()

@@ -435,7 +435,15 @@ class DownloadTask:
     def __init__(self, model_info: Dict[str, Any], dest_dir: str, on_progress: Optional[Callable] = None, on_complete: Optional[Callable] = None):
         self.model_info = model_info
         self.dest_dir = dest_dir
-        self.dest_path = os.path.join(dest_dir, model_info["filename"])
+        # SECURITY: Sanitize filename to prevent path traversal vulnerability (e.g. '../../malicious.safetensors')
+        raw_filename = str(model_info.get("filename", "")).replace("\\", "/")
+        safe_filename = os.path.basename(raw_filename)
+        if not safe_filename:
+            safe_filename = "downloaded_model.safetensors"
+        abs_dest_dir = os.path.abspath(dest_dir)
+        self.dest_path = os.path.abspath(os.path.join(abs_dest_dir, safe_filename))
+        if not self.dest_path.startswith(abs_dest_dir):
+            raise ValueError(f"Security error: path traversal detected in filename '{raw_filename}'")
         self.temp_path = self.dest_path + ".download"
         self.on_progress = on_progress
         self.on_complete = on_complete
@@ -615,11 +623,12 @@ def download_custom_url(url: str, custom_name: str = "", model_type: str = "chec
     if not custom_name:
         parsed = urllib.parse.urlparse(url)
         path = parsed.path
-        filename = os.path.basename(path)
+        filename = os.path.basename(path.replace("\\", "/"))
         if not filename or "?" in filename:
             filename = "custom_model.safetensors"
     else:
-        filename = custom_name
+        # SECURITY: Strip path traversal components from user-supplied custom_name
+        filename = os.path.basename(custom_name.replace("\\", "/"))
         if not filename.endswith((".safetensors", ".ckpt", ".pth", ".bin")):
             filename += ".safetensors"
 

@@ -132,7 +132,15 @@ def generate_pbr_maps(image_path: str) -> dict:
     """
     try:
         import numpy as np
-        from scipy.ndimage import sobel
+        try:
+            from scipy.ndimage import sobel
+        except ImportError:
+            def sobel(arr, axis=0):
+                p = np.pad(arr, 1, mode='edge')
+                if axis == 1:
+                    return (p[1:-1, 2:] - p[1:-1, :-2]) * 2.0 + (p[:-2, 2:] - p[:-2, :-2]) + (p[2:, 2:] - p[2:, :-2])
+                else:
+                    return (p[2:, 1:-1] - p[:-2, 1:-1]) * 2.0 + (p[2:, :-2] - p[:-2, :-2]) + (p[2:, 2:] - p[:-2, 2:])
     except ImportError:
         np = None
 
