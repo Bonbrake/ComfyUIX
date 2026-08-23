@@ -22,6 +22,12 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = HERE
 
@@ -30,7 +36,11 @@ results = []
 def record(category, test_name, passed, details=""):
     results.append({"category": category, "test": test_name, "passed": passed, "details": details})
     status_str = "✔ PASS" if passed else "✖ FAIL"
-    print(f"[{status_str}] [{category}] {test_name}: {details}")
+    try:
+        print(f"[{status_str}] [{category}] {test_name}: {details}")
+    except UnicodeEncodeError:
+        status_ascii = "PASS" if passed else "FAIL"
+        print(f"[{status_ascii}] [{category}] {test_name}: {details}".encode("ascii", "replace").decode("ascii"))
 
 # =========================================================================
 # VECTOR 1: Static AST & Duplicate Method Scan Across Codebase

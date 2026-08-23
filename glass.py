@@ -17,8 +17,8 @@ import time
 import tkinter as tk
 from PIL import Image, ImageFilter, ImageTk, ImageDraw, ImageFont
 
-user32 = ctypes.windll.user32
-GDI32 = ctypes.windll.gdi32
+user32 = ctypes.windll.user32 if hasattr(ctypes, "windll") else None
+GDI32 = ctypes.windll.gdi32 if hasattr(ctypes, "windll") else None
 SRCCOPY = 0x00CC0020
 CAPTUREBLT = 0x40000000
 BI_RGB = 0
