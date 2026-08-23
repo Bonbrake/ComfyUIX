@@ -111,13 +111,24 @@ TEXTURE_KEYWORDS = (
     "mat_", "_tex", "_mat", "orm", "mask"
 )
 
-def is_texture_file(filepath: str) -> bool:
-    """Determine if a file is an authentic texture/material map."""
-    ext = os.path.splitext(filepath)[1].lower()
+def is_texture_file(filepath: str, ext: str = None, base: str = None, parent: str = None) -> bool:
+    """Determine if a file is an authentic texture/material map.
+    Accepts optional pre-parsed ext, base name, and parent dir to avoid redundant path calculations.
+    """
+    if ext is None:
+        ext = os.path.splitext(filepath)[1].lower()
+    else:
+        ext = ext.lower()
     if ext in (".tga", ".dds", ".exr"):
         return True
-    base = os.path.basename(filepath).lower()
-    parent = os.path.basename(os.path.dirname(filepath)).lower()
+    if base is None:
+        base = os.path.basename(filepath).lower()
+    else:
+        base = base.lower()
+    if parent is None:
+        parent = os.path.basename(os.path.dirname(filepath)).lower()
+    else:
+        parent = parent.lower()
     if parent in ("textures", "materials", "pbr_maps", "texture_exports"):
         return True
     for kw in TEXTURE_KEYWORDS:
@@ -210,14 +221,15 @@ def generate_pbr_maps(image_path: str) -> dict:
 def scan_all_media_files(directories, recursive=True, max_depth=2, filter_type="all"):
     """Scan given directories for media files, excluding input and cache folders.
     filter_type: 'all', 'images', 'videos', 'textures'
+    Optimized for high-throughput directory traversal with O(1) set lookup and minimal OS syscalls.
     """
-    valid_exts = (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".tga", ".bmp")
+    valid_exts = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".tga", ".bmp"}
     if filter_type == "images":
-        valid_exts = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+        valid_exts = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
     elif filter_type == "videos":
-        valid_exts = (".mp4", ".webm", ".avi", ".mov", ".gif")
+        valid_exts = {".mp4", ".webm", ".avi", ".mov", ".gif"}
     elif filter_type == "textures":
-        valid_exts = (".tga", ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".dds")
+        valid_exts = {".tga", ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".dds"}
 
     valid_files = []
     seen = set()
@@ -226,16 +238,24 @@ def scan_all_media_files(directories, recursive=True, max_depth=2, filter_type="
     for base in directories:
         if not os.path.isdir(base):
             continue
+        norm_base = os.path.normpath(base)
+        base_depth = len(norm_base.split(os.sep)) if norm_base != "." else 0
+
         if not recursive:
             try:
+                parent = os.path.basename(norm_base)
                 for f in os.listdir(base):
-                    if f.lower().endswith(valid_exts) and not f.lower().startswith("input"):
+                    f_lower = f.lower()
+                    if f_lower.startswith("input"):
+                        continue
+                    dot_idx = f_lower.rfind(".")
+                    if dot_idx != -1 and f_lower[dot_idx:] in valid_exts:
                         fp = os.path.join(base, f)
-                        if os.path.isfile(fp) and fp not in seen:
-                            ext = os.path.splitext(fp)[1].lower()
-                            if filter_type == "textures" and not is_texture_file(fp):
+                        if fp not in seen and os.path.isfile(fp):
+                            ext = f_lower[dot_idx:]
+                            if filter_type == "textures" and not is_texture_file(fp, ext=ext, base=f_lower, parent=parent):
                                 continue
-                            if filter_type == "images" and is_texture_file(fp) and ext == ".tga":
+                            if filter_type == "images" and ext == ".tga" and is_texture_file(fp, ext=ext, base=f_lower, parent=parent):
                                 continue
                             seen.add(fp)
                             valid_files.append(fp)
@@ -251,17 +271,27 @@ def scan_all_media_files(directories, recursive=True, max_depth=2, filter_type="
                 continue
             if ("screenshot" in lower_root or "camera roll" in lower_root) and root not in directories:
                 continue
-            rel = os.path.relpath(root, base)
-            if rel != "." and len(rel.split(os.sep)) > max_depth:
-                continue
+
+            if max_depth is not None:
+                norm_root = os.path.normpath(root)
+                depth = len(norm_root.split(os.sep)) - base_depth if norm_root != norm_base else 0
+                if depth > max_depth:
+                    dirs.clear()
+                    continue
+
+            parent = os.path.basename(root)
             for f in files:
-                if f.lower().endswith(valid_exts) and not f.lower().startswith("input"):
+                f_lower = f.lower()
+                if f_lower.startswith("input"):
+                    continue
+                dot_idx = f_lower.rfind(".")
+                if dot_idx != -1 and f_lower[dot_idx:] in valid_exts:
                     fp = os.path.join(root, f)
-                    if os.path.isfile(fp) and fp not in seen:
-                        ext = os.path.splitext(fp)[1].lower()
-                        if filter_type == "textures" and not is_texture_file(fp):
+                    if fp not in seen:
+                        ext = f_lower[dot_idx:]
+                        if filter_type == "textures" and not is_texture_file(fp, ext=ext, base=f_lower, parent=parent):
                             continue
-                        if filter_type == "images" and is_texture_file(fp) and ext == ".tga":
+                        if filter_type == "images" and ext == ".tga" and is_texture_file(fp, ext=ext, base=f_lower, parent=parent):
                             continue
                         seen.add(fp)
                         valid_files.append(fp)
