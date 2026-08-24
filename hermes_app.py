@@ -943,12 +943,10 @@ class HermesMatrixApp(QWidget):
         btn_row.setSpacing(6)
         self.clear_btn = QPushButton("CLEAR VRAM")
         self.clear_btn.setStyleSheet(self._btn("#39ff8c"))
-        self.clear_btn.setToolTip("Unload models and purge PyTorch VRAM cache.")
         self.clear_btn.clicked.connect(self._on_clear)
 
         self.studio_btn = QPushButton("LAUNCH STUDIO")
         self.studio_btn.setStyleSheet(self._btn("#39ff8c"))
-        self.studio_btn.setToolTip("Launch or focus the primary ComfyUIX Desktop Studio GUI.")
         def _launch_studio():
             import subprocess
             DETACHED = 0x00000008 if os.name == "nt" else 0
@@ -975,7 +973,6 @@ class HermesMatrixApp(QWidget):
 
         self.webui_btn = QPushButton("OPEN WEB UI")
         self.webui_btn.setStyleSheet(self._btn("#39ff8c"))
-        self.webui_btn.setToolTip("Open local ComfyUI browser interface (http://127.0.0.1:8188).")
         def _launch_webui():
             try:
                 from comfyui_desktop import browser_doctor
@@ -990,11 +987,9 @@ class HermesMatrixApp(QWidget):
 
         self.feed_btn = QPushButton("CLEAR FEED")
         self.feed_btn.setStyleSheet(self._btn("#39ff8c"))
-        self.feed_btn.setToolTip("Clear all console telemetry log entries.")
         self.feed_btn.clicked.connect(lambda: self.console.clear())
         self.hide_btn = QPushButton("HIDE TO TRAY")
         self.hide_btn.setStyleSheet(self._btn("#39ff8c"))
-        self.hide_btn.setToolTip("Minimize Matrix HUD to system tray background worker.")
         self.hide_btn.clicked.connect(self.hide)
 
         btn_row.addWidget(self.clear_btn)
