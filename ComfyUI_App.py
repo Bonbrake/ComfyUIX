@@ -2421,10 +2421,11 @@ class ComfyUIApp:
                               hover_color=BRAND_HOVER, font=ctk.CTkFont(family="Consolas", size=10, weight="bold"),
                               command=lambda: (win.destroy(), self._send_gallery_to_upscale(fpath))).pack(fill="x", pady=3)
 
+            # SECURITY: Pass command arguments as list to prevent potential command injection via fpath
             ctk.CTkButton(btn_box, text="📁 Reveal in Explorer", height=30, corner_radius=6,
                           fg_color=BG_CARD_ALT, text_color=TEXT, border_width=1, border_color=BORDER_MUTED,
                           hover_color=BRAND_HOVER, font=ctk.CTkFont(family="Consolas", size=10, weight="bold"),
-                          command=lambda: subprocess.Popen(f'explorer /select,"{fpath}"')).pack(fill="x", pady=3)
+                          command=lambda: subprocess.Popen(["explorer", "/select,", fpath])).pack(fill="x", pady=3)
 
             ctk.CTkButton(btn_box, text="🗑 Delete File", height=30, corner_radius=6,
                           fg_color="#3A1114", text_color="#FF6B6B", border_width=1, border_color="#552222",
@@ -2624,10 +2625,11 @@ class ComfyUIApp:
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
                           command=lambda fp=fpath, fn=fname: self._show_gallery_lightbox(fp, fn)).grid(row=0, column=1, padx=2, sticky="ew")
 
+            # SECURITY: Pass command arguments as list to prevent potential command injection via fpath
             ctk.CTkButton(act_bar, text="📁", height=24, width=28, corner_radius=4,
                           fg_color=BG_CARD_ALT, hover_color=BRAND_HOVER, text_color=TEXT,
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
-                          command=lambda fp=fpath: subprocess.Popen(f'explorer /select,"{fp}"')).grid(row=0, column=2, padx=2, sticky="ew")
+                          command=lambda fp=fpath: subprocess.Popen(["explorer", "/select,", fp])).grid(row=0, column=2, padx=2, sticky="ew")
 
             ctk.CTkButton(act_bar, text="🗑", height=24, width=28, corner_radius=4,
                           fg_color="#2A1114", hover_color="#551111", text_color="#FF6B6B",
