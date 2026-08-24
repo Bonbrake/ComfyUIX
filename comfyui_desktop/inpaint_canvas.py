@@ -6,6 +6,7 @@ import os
 import tkinter as tk
 import customtkinter as ctk
 from PIL import Image, ImageTk, ImageDraw, ImageOps
+from comfyui_desktop.widgets import ToolTip
 
 class InpaintCanvas(ctk.CTkFrame):
     """Interactive Inpaint Canvas with live brush mask rendering."""
@@ -35,11 +36,19 @@ class InpaintCanvas(ctk.CTkFrame):
                                       fg_color="#1C3D2E", hover_color="#2B5C45", text_color="#FFFFFF", command=self._toggle_erase)
         self.erase_btn.pack(side="left", padx=4)
         
-        ctk.CTkButton(tb, text="🔄 Invert", width=65, height=24, font=ctk.CTkFont(family="Consolas", size=10),
-                       fg_color="#1C3D2E", hover_color="#2B5C45", text_color="#FFFFFF", command=self.invert_mask).pack(side="left", padx=4)
+        self.invert_btn = ctk.CTkButton(tb, text="🔄 Invert", width=65, height=24, font=ctk.CTkFont(family="Consolas", size=10),
+                       fg_color="#1C3D2E", hover_color="#2B5C45", text_color="#FFFFFF", command=self.invert_mask)
+        self.invert_btn.pack(side="left", padx=4)
                        
-        ctk.CTkButton(tb, text="🧹 Clear", width=60, height=24, font=ctk.CTkFont(family="Consolas", size=10),
-                       fg_color="#3D1C1C", hover_color="#5C2B2B", text_color="#FFFFFF", command=self.clear_mask).pack(side="left", padx=4)
+        self.clear_btn = ctk.CTkButton(tb, text="🧹 Clear", width=60, height=24, font=ctk.CTkFont(family="Consolas", size=10),
+                       fg_color="#3D1C1C", hover_color="#5C2B2B", text_color="#FFFFFF", command=self.clear_mask)
+        self.clear_btn.pack(side="left", padx=4)
+
+        # Attach hover tooltips to toolbar controls for immediate accessibility
+        ToolTip(self.slider, "Adjust brush stroke size for mask drawing.")
+        ToolTip(self.erase_btn, "Toggle between Paint (add mask) and Erase (remove mask) modes.")
+        ToolTip(self.invert_btn, "Invert entire mask selection.")
+        ToolTip(self.clear_btn, "Clear all painted mask areas.")
 
         # Drawing Canvas
         self.canvas = tk.Canvas(self, width=self.canvas_w, height=self.canvas_h, bg="#040A06", highlightthickness=0, cursor="crosshair")
