@@ -227,7 +227,7 @@ def test_vector_3_pbr_math():
         # Generate PBR maps
         pbr = gallery.generate_pbr_maps(test_path)
         
-        # 1. Verify all 5 maps are present
+        # 1. Verify all 6 maps are present
         keys = ["albedo", "normal", "roughness", "height", "ao", "tiled_3x3"]
         all_present = all(k in pbr for k in keys)
         record(cat, "PBR Map Keys Completeness", all_present, f"Keys: {list(pbr.keys())}")
