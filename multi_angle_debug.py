@@ -29,8 +29,11 @@ results = []
 
 def record(category, test_name, passed, details=""):
     results.append({"category": category, "test": test_name, "passed": passed, "details": details})
-    status_str = "✔ PASS" if passed else "✖ FAIL"
-    print(f"[{status_str}] [{category}] {test_name}: {details}")
+    status_str = "[PASS]" if passed else "[FAIL]"
+    try:
+        print(f"{status_str} [{category}] {test_name}: {details}")
+    except UnicodeEncodeError:
+        print(f"{status_str} [{category}] {test_name}: {details}".encode("ascii", errors="replace").decode("ascii"))
 
 # =========================================================================
 # VECTOR 1: Static AST & Duplicate Method Scan Across Codebase
@@ -224,7 +227,7 @@ def test_vector_3_pbr_math():
         # Generate PBR maps
         pbr = gallery.generate_pbr_maps(test_path)
         
-        # 1. Verify all 5 maps are present
+        # 1. Verify all 6 maps are present
         keys = ["albedo", "normal", "roughness", "height", "ao", "tiled_3x3"]
         all_present = all(k in pbr for k in keys)
         record(cat, "PBR Map Keys Completeness", all_present, f"Keys: {list(pbr.keys())}")
