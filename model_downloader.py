@@ -112,6 +112,19 @@ def get_model_target_dir(model_type: str, base_dir: Optional[str] = None) -> str
     else:
         return get_checkpoints_dir(base_dir)
 
+def _sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent path traversal vulnerabilities."""
+    if not filename:
+        return "unnamed_model.safetensors"
+    # Extract only the base filename to strip any path traversal components (e.g., ../, ..\)
+    clean = os.path.basename(str(filename).replace("\\", "/")).strip()
+    # Remove any residual leading dots to prevent hidden or relative path manipulation
+    clean = clean.lstrip(".")
+    if not clean:
+        return "unnamed_model.safetensors"
+    return clean
+
+
 def get_free_disk_space_gb(target_dir: str) -> float:
     """Return available free disk space in GB for the partition hosting target_dir."""
     try:
@@ -270,7 +283,7 @@ def fetch_huggingface_models(query: str = "", tag: str = "text-to-image", limit:
                 m_type = "controlnet"
 
             target_dir = get_model_target_dir(m_type)
-            filename = f"{name_clean}.safetensors" if not name_clean.endswith((".safetensors", ".pth", ".bin")) else name_clean
+            filename = _sanitize_filename(name_clean if name_clean.endswith((".safetensors", ".pth", ".bin")) else f"{name_clean}.safetensors")
             dest_file = os.path.join(target_dir, filename)
             installed = os.path.exists(dest_file) and os.path.getsize(dest_file) > 1024 * 1024
 
@@ -339,8 +352,8 @@ def fetch_civitai_models(query: str = "", model_type: str = "Checkpoint", limit:
 
             m_type = item.get("type", "Checkpoint").lower()
             target_dir = get_model_target_dir(m_type)
-            filename = safe_file.get("name", f"{name}.safetensors") if safe_file else f"{name}.safetensors"
-            filename = filename.replace(" ", "_").replace("/", "_")
+            raw_fn = safe_file.get("name", f"{name}.safetensors") if safe_file else f"{name}.safetensors"
+            filename = _sanitize_filename(raw_fn.replace(" ", "_"))
             size_kb = safe_file.get("sizeKB", 4 * 1024 * 1024) if safe_file else 4 * 1024 * 1024
             size_gb = round(size_kb / (1024 * 1024), 1)
 
@@ -433,9 +446,14 @@ def get_installed_checkpoint_count() -> int:
 class DownloadTask:
     """Represents an active or queued model download with disk validation and preview caching."""
     def __init__(self, model_info: Dict[str, Any], dest_dir: str, on_progress: Optional[Callable] = None, on_complete: Optional[Callable] = None):
-        self.model_info = model_info
-        self.dest_dir = dest_dir
-        self.dest_path = os.path.join(dest_dir, model_info["filename"])
+        self.model_info = model_info.copy()
+        safe_fname = _sanitize_filename(self.model_info.get("filename", ""))
+        self.model_info["filename"] = safe_fname
+        self.dest_dir = os.path.abspath(dest_dir)
+        target_path = os.path.abspath(os.path.join(self.dest_dir, safe_fname))
+        if not target_path.startswith(self.dest_dir):
+            raise ValueError(f"Path traversal detected in filename: {safe_fname}")
+        self.dest_path = target_path
         self.temp_path = self.dest_path + ".download"
         self.on_progress = on_progress
         self.on_complete = on_complete
@@ -615,11 +633,13 @@ def download_custom_url(url: str, custom_name: str = "", model_type: str = "chec
     if not custom_name:
         parsed = urllib.parse.urlparse(url)
         path = parsed.path
-        filename = os.path.basename(path)
-        if not filename or "?" in filename:
+        raw_fn = os.path.basename(path)
+        if not raw_fn or "?" in raw_fn:
             filename = "custom_model.safetensors"
+        else:
+            filename = _sanitize_filename(raw_fn)
     else:
-        filename = custom_name
+        filename = _sanitize_filename(custom_name)
         if not filename.endswith((".safetensors", ".ckpt", ".pth", ".bin")):
             filename += ".safetensors"
 
