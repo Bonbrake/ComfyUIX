@@ -968,11 +968,13 @@ class ToolTip:
         self._bind_recursive(widget)
 
     def _bind_recursive(self, w):
-        """Bind Enter/Leave/Click on w and every descendant."""
+        """Bind Enter/Leave/Click/FocusIn/FocusOut on w and every descendant."""
         try:
             w.bind("<Enter>", self._on_enter, add="+")
             w.bind("<Leave>", self._on_leave, add="+")
             w.bind("<ButtonPress>", self._on_click, add="+")
+            w.bind("<FocusIn>", self._on_enter, add="+")
+            w.bind("<FocusOut>", self._on_leave, add="+")
         except Exception:
             pass
         try:
@@ -1086,6 +1088,8 @@ class ToolTip:
         try:
             self.widget.unbind("<Enter>")
             self.widget.unbind("<Leave>")
+            self.widget.unbind("<FocusIn>")
+            self.widget.unbind("<FocusOut>")
         except Exception:
             pass
 

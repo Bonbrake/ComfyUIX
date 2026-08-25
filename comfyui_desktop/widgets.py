@@ -127,6 +127,8 @@ class ToolTip:
         try:
             widget.bind("<Enter>", self.schedule, add="+")
             widget.bind("<Leave>", self.hide, add="+")
+            widget.bind("<FocusIn>", self.schedule, add="+")
+            widget.bind("<FocusOut>", self.hide, add="+")
         except Exception:
             pass
 
@@ -159,8 +161,10 @@ class ToolTip:
             ry = self.widget.winfo_rooty()
             rw = self.widget.winfo_width()
             rh = self.widget.winfo_height()
+            # If pointer is not hovering over the widget (e.g. keyboard focus), position near widget
             if not (rx <= px <= rx + rw and ry <= py <= ry + rh):
-                return
+                px = rx + 20
+                py = ry + rh + 4
         except Exception:
             px, py = 100, 100
 
@@ -193,17 +197,18 @@ class ToolTip:
             self.tip_window = None
 
     def hide(self, event=None):
-        try:
-            px = self.widget.winfo_pointerx()
-            py = self.widget.winfo_pointery()
-            rx = self.widget.winfo_rootx()
-            ry = self.widget.winfo_rooty()
-            rw = self.widget.winfo_width()
-            rh = self.widget.winfo_height()
-            if rx <= px <= rx + rw and ry <= py <= ry + rh:
-                return
-        except Exception:
-            pass
+        if event and getattr(event, "type", None) == tk.EventType.Leave:
+            try:
+                px = self.widget.winfo_pointerx()
+                py = self.widget.winfo_pointery()
+                rx = self.widget.winfo_rootx()
+                ry = self.widget.winfo_rooty()
+                rw = self.widget.winfo_width()
+                rh = self.widget.winfo_height()
+                if rx <= px <= rx + rw and ry <= py <= ry + rh:
+                    return
+            except Exception:
+                pass
 
         self.unschedule()
         if self.tip_window:
