@@ -292,6 +292,27 @@ class QATestRunner:
             self.record_test(cat, "WebSocket Client Exception", False, str(e))
 
     # -------------------------------------------------------------------------
+    # 8.5 Security & Explorer Command Injection Prevention Test
+    # -------------------------------------------------------------------------
+    def test_security_reveal_in_explorer(self):
+        cat = "Security & Explorer Defense"
+        try:
+            from unittest.mock import patch
+            from ComfyUI_App import _reveal_in_explorer
+
+            test_path = "C:\\Users\\Test\\My Folder\\image & test 'quote' \"; calc.exe\".png"
+            with patch("subprocess.Popen") as mock_popen:
+                _reveal_in_explorer(test_path)
+                mock_popen.assert_called_once()
+                args, _ = mock_popen.call_args
+                called_cmd = args[0]
+                is_list = isinstance(called_cmd, list)
+                self.record_test(cat, "Explorer Parameterized List Arguments", is_list,
+                                 f"Subprocess invoked with list args (not shell string): {called_cmd}")
+        except Exception as e:
+            self.record_test(cat, "Explorer Security Test Exception", False, str(e))
+
+    # -------------------------------------------------------------------------
     # 9. CustomTkinter Desktop GUI & Tab Navigation Tests
     # -------------------------------------------------------------------------
     def test_desktop_gui(self):
@@ -524,6 +545,7 @@ class QATestRunner:
         self.test_multi_monitor_and_geometry_bounds()
         self.test_model_downloader_resilience()
         self.test_websocket_and_rest_client()
+        self.test_security_reveal_in_explorer()
         self.test_desktop_gui()
         self.test_matrix_hud()
         self.test_workflow_builders()
