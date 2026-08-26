@@ -13,6 +13,12 @@ Tests 6 unique diagnostic vectors:
 import sys
 import os
 import ast
+
+# Ensure Windows console handles UTF-8 status characters (✔/✖) without UnicodeEncodeError
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import json
 import math
 import io
