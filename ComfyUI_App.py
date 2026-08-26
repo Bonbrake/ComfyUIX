@@ -8860,7 +8860,7 @@ class ComfyUIApp:
 
         # 2. ComfyUI /system_stats
         try:
-            r = requests.get(COMFYUI_URL + "/system_stats", timeout=1.0)
+            r = requests.get(COMFYUI_URL + "/system_stats", timeout=0.3)
             if r.status_code == 200:
                 devs = r.json().get("devices", [])
                 if devs:
@@ -8877,7 +8877,7 @@ class ComfyUIApp:
 
         # 3. Hermes LLM Proxy telemetry on :5119
         try:
-            r = requests.get("http://127.0.0.1:5119/admin/telemetry", timeout=1.0)
+            r = requests.get("http://127.0.0.1:5119/admin/telemetry", timeout=0.3)
             if r.status_code == 200:
                 h_data = r.json()
                 tps = h_data.get("tok_per_sec", 0.0)

@@ -35,7 +35,7 @@ class ComfyClient:
     @staticmethod
     def post_interrupt():
         try:
-            return requests.post(_get_url() + "/interrupt", timeout=5)
+            return requests.post(_get_url() + "/interrupt", timeout=0.5)
         except Exception:
             return None
 
@@ -43,7 +43,7 @@ class ComfyClient:
     def purge_vram():
         """Invoke ComfyUI /free endpoint to clear CUDA memory cache and unload idle models."""
         try:
-            r = requests.post(_get_url() + "/free", json={"unload_models": True, "free_memory": True}, timeout=5)
+            r = requests.post(_get_url() + "/free", json={"unload_models": True, "free_memory": True}, timeout=0.5)
             return r.status_code == 200
         except Exception:
             return False
@@ -51,7 +51,7 @@ class ComfyClient:
     @staticmethod
     def get_system_stats():
         try:
-            r = requests.get(_get_url() + "/system_stats", timeout=3)
+            r = requests.get(_get_url() + "/system_stats", timeout=0.5)
             if r.status_code == 200:
                 return r.json()
         except Exception:
