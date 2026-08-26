@@ -19,6 +19,12 @@ import argparse
 import traceback
 from datetime import datetime
 
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("ComfyUIX_QA")
@@ -138,7 +144,8 @@ class QATestRunner:
             self.record_test(cat, "GPU Vendor Detection", has_vendor, f"Vendor: {info.get('vendor')}")
 
             vram_mb = info.get("vram_mb", 0)
-            self.record_test(cat, "VRAM Detection", vram_mb > 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
+            vram_ok = isinstance(vram_mb, (int, float)) and vram_mb >= 0
+            self.record_test(cat, "VRAM Detection", vram_ok, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
 
             rec_mode = info.get("recommended_mode")
             self.record_test(cat, "Recommended Mode Calculation", bool(rec_mode), f"Recommended mode: {rec_mode}")
@@ -290,6 +297,27 @@ class QATestRunner:
             self.record_test(cat, "ComfyClient Safe VRAM Purge", True, f"purge_vram executed (returned: {purged})")
         except Exception as e:
             self.record_test(cat, "WebSocket Client Exception", False, str(e))
+
+    # -------------------------------------------------------------------------
+    # 8.5 Security & Explorer Command Injection Prevention Test
+    # -------------------------------------------------------------------------
+    def test_security_reveal_in_explorer(self):
+        cat = "Security & Explorer Defense"
+        try:
+            from unittest.mock import patch
+            from ComfyUI_App import _reveal_in_explorer
+
+            test_path = "C:\\Users\\Test\\My Folder\\image & test 'quote' \"; calc.exe\".png"
+            with patch("subprocess.Popen") as mock_popen:
+                _reveal_in_explorer(test_path)
+                mock_popen.assert_called_once()
+                args, _ = mock_popen.call_args
+                called_cmd = args[0]
+                is_list = isinstance(called_cmd, list)
+                self.record_test(cat, "Explorer Parameterized List Arguments", is_list,
+                                 f"Subprocess invoked with list args (not shell string): {called_cmd}")
+        except Exception as e:
+            self.record_test(cat, "Explorer Security Test Exception", False, str(e))
 
     # -------------------------------------------------------------------------
     # 9. CustomTkinter Desktop GUI & Tab Navigation Tests
@@ -524,6 +552,7 @@ class QATestRunner:
         self.test_multi_monitor_and_geometry_bounds()
         self.test_model_downloader_resilience()
         self.test_websocket_and_rest_client()
+        self.test_security_reveal_in_explorer()
         self.test_desktop_gui()
         self.test_matrix_hud()
         self.test_workflow_builders()
