@@ -132,7 +132,10 @@ def generate_pbr_maps(image_path: str) -> dict:
     """
     try:
         import numpy as np
-        from scipy.ndimage import sobel
+        try:
+            from scipy.ndimage import sobel
+        except ImportError:
+            sobel = None
     except ImportError:
         np = None
 
@@ -159,8 +162,13 @@ def generate_pbr_maps(image_path: str) -> dict:
 
             # 2. Tangent-space Normal Map (Sobel filter)
             if gray_arr is not None:
-                dx = sobel(gray_arr, axis=1) * 3.0
-                dy = sobel(gray_arr, axis=0) * 3.0
+                if sobel is not None:
+                    dx = sobel(gray_arr, axis=1) * 3.0
+                    dy = sobel(gray_arr, axis=0) * 3.0
+                else:
+                    dy, dx = np.gradient(gray_arr)
+                    dx = dx * 12.0
+                    dy = dy * 12.0
                 dz = np.ones_like(gray_arr)
                 norm = np.sqrt(dx**2 + dy**2 + dz**2)
                 norm = np.maximum(norm, 1e-6)
