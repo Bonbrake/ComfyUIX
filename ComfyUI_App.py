@@ -972,6 +972,8 @@ class ToolTip:
         try:
             w.bind("<Enter>", self._on_enter, add="+")
             w.bind("<Leave>", self._on_leave, add="+")
+            w.bind("<FocusIn>", self._on_enter, add="+")
+            w.bind("<FocusOut>", self._on_leave, add="+")
             w.bind("<ButtonPress>", self._on_click, add="+")
         except Exception:
             pass
