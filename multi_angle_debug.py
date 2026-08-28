@@ -12,6 +12,11 @@ Tests 6 unique diagnostic vectors:
 
 import sys
 import os
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
 import ast
 import json
 import math

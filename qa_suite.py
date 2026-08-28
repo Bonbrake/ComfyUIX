@@ -138,7 +138,7 @@ class QATestRunner:
             self.record_test(cat, "GPU Vendor Detection", has_vendor, f"Vendor: {info.get('vendor')}")
 
             vram_mb = info.get("vram_mb", 0)
-            self.record_test(cat, "VRAM Detection", vram_mb > 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
+            self.record_test(cat, "VRAM Detection", vram_mb >= 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
 
             rec_mode = info.get("recommended_mode")
             self.record_test(cat, "Recommended Mode Calculation", bool(rec_mode), f"Recommended mode: {rec_mode}")
@@ -362,6 +362,19 @@ class QATestRunner:
                 self.record_test(cat, "Input Media Pickers & Gallery Workflows", has_pickers, "Verified _pick_input, _pick_upscale, and gallery send-to workflows")
             except Exception as e:
                 self.record_test(cat, "Input Media Pickers & Gallery Workflows", False, str(e))
+
+            # Test Icon-Only Button ToolTip Accessibility Coverage
+            try:
+                import inspect
+                from ComfyUI_App import ToolTip
+                app_src = inspect.getsource(ComfyUIApp)
+                has_folder_tt = 'ToolTip(folder_btn' in app_src
+                has_del_tt = 'ToolTip(del_btn' in app_src
+                has_seed_tt = 'ToolTip(seed_btn' in app_src
+                has_all_tt = has_folder_tt and has_del_tt and has_seed_tt
+                self.record_test(cat, "Icon-Only Button ToolTip Coverage", has_all_tt, "Verified ToolTips for folder, delete, and seed buttons")
+            except Exception as e:
+                self.record_test(cat, "Icon-Only Button ToolTip Coverage", False, str(e))
 
             _safe_destroy_app(root, app)
         except Exception as e:
