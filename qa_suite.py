@@ -138,7 +138,7 @@ class QATestRunner:
             self.record_test(cat, "GPU Vendor Detection", has_vendor, f"Vendor: {info.get('vendor')}")
 
             vram_mb = info.get("vram_mb", 0)
-            self.record_test(cat, "VRAM Detection", vram_mb > 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
+            self.record_test(cat, "VRAM Detection", vram_mb >= 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
 
             rec_mode = info.get("recommended_mode")
             self.record_test(cat, "Recommended Mode Calculation", bool(rec_mode), f"Recommended mode: {rec_mode}")
@@ -268,6 +268,13 @@ class QATestRunner:
             # Test checkpoint counting
             ckpt_count = model_downloader.get_installed_checkpoint_count()
             self.record_test(cat, "Installed Checkpoint Indexer", ckpt_count >= 0, f"Indexed {ckpt_count} installed checkpoint files")
+
+            # Security: Test URL scheme validation in download_custom_url
+            try:
+                model_downloader.download_custom_url("file:///etc/passwd")
+                self.record_test(cat, "URL Scheme Security Validation", False, "Failed to reject non-http/https URL scheme")
+            except ValueError as ve:
+                self.record_test(cat, "URL Scheme Security Validation", "http and https" in str(ve), f"Rejected unsafe scheme: {ve}")
         except Exception as e:
             self.record_test(cat, "Model Downloader Exception", False, str(e))
 

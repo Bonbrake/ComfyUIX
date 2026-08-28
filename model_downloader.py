@@ -611,7 +611,12 @@ def download_custom_url(url: str, custom_name: str = "", model_type: str = "chec
     url = url.strip()
     if not url:
         raise ValueError("URL cannot be empty")
-    
+
+    parsed_scheme = urllib.parse.urlparse(url).scheme.lower()
+    if parsed_scheme not in ("http", "https"):
+        # Prevent non-http/https schemes (e.g. file://, ftp://) to mitigate SSRF & local file staging risks
+        raise ValueError(f"Invalid or unsafe URL scheme '{parsed_scheme}'. Only http and https URLs are allowed.")
+
     if not custom_name:
         parsed = urllib.parse.urlparse(url)
         path = parsed.path

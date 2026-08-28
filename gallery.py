@@ -132,7 +132,6 @@ def generate_pbr_maps(image_path: str) -> dict:
     """
     try:
         import numpy as np
-        from scipy.ndimage import sobel
     except ImportError:
         np = None
 
@@ -157,10 +156,11 @@ def generate_pbr_maps(image_path: str) -> dict:
             gray = pot_im.convert("L")
             gray_arr = np.array(gray, dtype=np.float32) / 255.0 if np is not None else None
 
-            # 2. Tangent-space Normal Map (Sobel filter)
+            # 2. Tangent-space Normal Map (Sobel / NumPy Gradient filter)
             if gray_arr is not None:
-                dx = sobel(gray_arr, axis=1) * 3.0
-                dy = sobel(gray_arr, axis=0) * 3.0
+                dy, dx = np.gradient(gray_arr)
+                dx = dx * 8.0
+                dy = dy * 8.0
                 dz = np.ones_like(gray_arr)
                 norm = np.sqrt(dx**2 + dy**2 + dz**2)
                 norm = np.maximum(norm, 1e-6)
