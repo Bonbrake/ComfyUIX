@@ -357,6 +357,13 @@ class CMatrixWidget(QWidget):
         self._font = QFont("Consolas", 14, QFont.Bold)
         self._font.setHintingPreference(QFont.PreferVerticalHinting)
         self._cell = 11
+        # Pre-allocated reusable static UI objects & color caches to prevent ~26k temporary allocations/sec
+        self._bg_color = QColor(2, 4, 2, 255)
+        self._head_color = QColor(230, 255, 230)
+        self._small_font = QFont("Consolas", 9)
+        self._fps_color = QColor(57, 255, 140, 220)
+        self._log_color = QColor(60, 220, 120)
+        self._color_cache = {}
         self._rebuild()
         # Cohesive default: full Matrix-green even before _apply_theme runs,
         # so nothing flashes slate/blue on first paint.
@@ -376,6 +383,20 @@ class CMatrixWidget(QWidget):
         self._fps_acc = 0.0
         self._fps_frames = 0
 
+    def _get_trail_color(self, k, ln, rg, gg, bg):
+        """Cached QColor resolution for trail steps to avoid per-frame allocation overhead."""
+        key = (k, ln, rg, gg, bg)
+        col = self._color_cache.get(key)
+        if col is None:
+            fade = max(0.0, 1.0 - k / ln)
+            r = int(rg * fade * 0.35)
+            g = int(50 + gg * fade * 0.65)
+            b = int(bg * fade * 0.35)
+            alpha = max(70, int(255 * fade))
+            col = QColor(r, g, b, alpha)
+            self._color_cache[key] = col
+        return col
+
     def _rebuild(self):
         w = max(1, self.width())
         h = max(1, self.height())
@@ -391,6 +412,7 @@ class CMatrixWidget(QWidget):
         self._rain = tuple(rain)
         self._head = QColor(*head) if not isinstance(head, QColor) else head
         self._log = tuple(log)
+        self._color_cache.clear()
         self.update()
 
     def resizeEvent(self, ev):
@@ -438,53 +460,52 @@ class CMatrixWidget(QWidget):
         # fill (below) hides this; grayscale rendering keeps it hidden.
         p.setRenderHint(QPainter.Antialiasing, True)
 
-        # Solid near-black background. Opaque fill avoids the warm antialiasing
-        # fringe that appears when translucent gray glyphs blend on a layered
-        # window surface.
-        p.fillRect(self.rect(), QColor(2, 4, 2, 255))
+        # Solid near-black background using pre-allocated QColor instance.
+        p.fillRect(self.rect(), self._bg_color)
 
         p.setFont(self._font)
         h = self.height()
 
         # Rain color from accent (shared with pill/bars for cohesion).
         rg, gg, bg = self._rain
+        glyphs = self.GLYPHS
+        num_glyphs = len(glyphs)
 
         for c in self._cols:
             base_row = int(c["y"] // self._cell)
-            for k in range(c["ln"]):
+            cx = int(c["x"])
+            ln = c["ln"]
+            x_hash = cx * 73856093
+            for k in range(ln):
                 row = base_row - k
                 yy = row * self._cell
                 if 0 <= yy <= h:
-                    ch = self._glyph_at(c["x"], row)
+                    # Inlined glyph calculation to eliminate per-cell method call overhead
+                    seed = (x_hash ^ (row * 19349663)) % num_glyphs
+                    ch = glyphs[seed]
                     if k == 0:
                         # Bright leading glyph — classic Matrix white-green head.
-                        p.setPen(QPen(QColor(230, 255, 230)))
+                        p.setPen(self._head_color)
                     else:
-                        # Fade from bright green toward black down the trail.
-                        fade = max(0.0, 1.0 - k / c["ln"])
-                        r = int(rg * fade * 0.35)
-                        g = int(50 + gg * fade * 0.65)
-                        b = int(bg * fade * 0.35)
-                        alpha = max(70, int(255 * fade))
-                        p.setPen(QColor(r, g, b, alpha))
-                    p.drawText(c["x"], yy, ch)
+                        # Fade trail step using pre-cached QColor instance
+                        p.setPen(self._get_trail_color(k, ln, rg, gg, bg))
+                    p.drawText(cx, yy, ch)
 
         # System-console log overlay — same green family as the rain.
         if getattr(self, "_log_lines", []):
-            p.setFont(QFont("Consolas", 9))
+            p.setFont(self._small_font)
             max_lines = max(1, self.height() // 14)
             visible = self._log_lines[-max_lines:]
+            p.setPen(self._log_color)
             for idx, line in enumerate(visible):
                 ly = self.height() - (len(visible) - idx) * 14 - 4
-                if ly < 12:
-                    continue
-                p.setPen(QColor(60, 220, 120))
-                p.drawText(6, ly, line[:120])
+                if ly >= 12:
+                    p.drawText(6, ly, line[:120])
 
         # FPS meter bottom-left — bright green, matches rain accent.
-        p.setFont(QFont("Consolas", 9))
+        p.setFont(self._small_font)
         fps_txt = f"{self._fps:5.1f} FPS" + ("  [PAUSED]" if self._paused else "")
-        p.setPen(QPen(QColor(57, 255, 140, 220)))
+        p.setPen(self._fps_color)
         p.drawText(8, self.height() - 8, fps_txt)
         p.end()
 
