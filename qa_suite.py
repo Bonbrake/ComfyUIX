@@ -268,6 +268,13 @@ class QATestRunner:
             # Test checkpoint counting
             ckpt_count = model_downloader.get_installed_checkpoint_count()
             self.record_test(cat, "Installed Checkpoint Indexer", ckpt_count >= 0, f"Indexed {ckpt_count} installed checkpoint files")
+
+            # Security: Test URL scheme validation in download_custom_url
+            try:
+                model_downloader.download_custom_url("file:///etc/passwd")
+                self.record_test(cat, "URL Scheme Security Validation", False, "Failed to reject non-http/https URL scheme")
+            except ValueError as ve:
+                self.record_test(cat, "URL Scheme Security Validation", "http and https" in str(ve), f"Rejected unsafe scheme: {ve}")
         except Exception as e:
             self.record_test(cat, "Model Downloader Exception", False, str(e))
 
