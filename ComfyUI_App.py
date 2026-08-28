@@ -2624,15 +2624,19 @@ class ComfyUIApp:
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
                           command=lambda fp=fpath, fn=fname: self._show_gallery_lightbox(fp, fn)).grid(row=0, column=1, padx=2, sticky="ew")
 
-            ctk.CTkButton(act_bar, text="📁", height=24, width=28, corner_radius=4,
+            folder_btn = ctk.CTkButton(act_bar, text="📁", height=24, width=28, corner_radius=4,
                           fg_color=BG_CARD_ALT, hover_color=BRAND_HOVER, text_color=TEXT,
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
-                          command=lambda fp=fpath: subprocess.Popen(f'explorer /select,"{fp}"')).grid(row=0, column=2, padx=2, sticky="ew")
+                          command=lambda fp=fpath: subprocess.Popen(f'explorer /select,"{fp}"'))
+            folder_btn.grid(row=0, column=2, padx=2, sticky="ew")
+            ToolTip(folder_btn, "Open File Location", "Open folder containing this image")
 
-            ctk.CTkButton(act_bar, text="🗑", height=24, width=28, corner_radius=4,
+            del_btn = ctk.CTkButton(act_bar, text="🗑", height=24, width=28, corner_radius=4,
                           fg_color="#2A1114", hover_color="#551111", text_color="#FF6B6B",
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
-                          command=lambda fp=fpath: self._delete_gallery_file(fp)).grid(row=0, column=3, padx=2, sticky="ew")
+                          command=lambda fp=fpath: self._delete_gallery_file(fp))
+            del_btn.grid(row=0, column=3, padx=2, sticky="ew")
+            ToolTip(del_btn, "Delete Image", "Permanently delete this image")
 
             # Click & hover bindings
             for w in (card, img_container):
@@ -3578,9 +3582,11 @@ class ComfyUIApp:
         seed_e = ctk.CTkEntry(seed_f, textvariable=self.video_seed_var, width=120, font=self.FONT_NORMAL,
                               fg_color=BG_CARD, text_color=TEXT)
         seed_e.grid(row=0, column=1, padx=4, sticky="w")
-        ctk.CTkButton(seed_f, text="🎲", width=28, height=24, font=ctk.CTkFont(size=12),
+        seed_btn = ctk.CTkButton(seed_f, text="🎲", width=28, height=24, font=ctk.CTkFont(size=12),
                       fg_color=ACCENT2, hover_color=ACCENT2_HOVER, text_color="#FFFFFF",
-                      command=lambda: self.video_seed_var.set(str(random.randint(0, 2**32)))).grid(row=0, column=4, padx=2)
+                      command=lambda: self.video_seed_var.set(str(random.randint(0, 2**32))))
+        seed_btn.grid(row=0, column=4, padx=2)
+        ToolTip(seed_btn, "Random Seed", "Generate a new random seed value")
         seed_lock = ctk.CTkSwitch(seed_f, text="Random", variable=self.video_seed_lock,
                                   font=self.FONT_NORMAL, text_color=TEXT, fg_color=BORDER,
                                   progress_color=ACCENT2, button_color=TEXT)
