@@ -29,8 +29,11 @@ results = []
 
 def record(category, test_name, passed, details=""):
     results.append({"category": category, "test": test_name, "passed": passed, "details": details})
-    status_str = "✔ PASS" if passed else "✖ FAIL"
-    print(f"[{status_str}] [{category}] {test_name}: {details}")
+    status_str = "[PASS]" if passed else "[FAIL]"
+    try:
+        print(f"[{status_str}] [{category}] {test_name}: {details}")
+    except Exception:
+        sys.stdout.write(f"[{status_str}] [{category}] {test_name}: {details}\n")
 
 # =========================================================================
 # VECTOR 1: Static AST & Duplicate Method Scan Across Codebase
