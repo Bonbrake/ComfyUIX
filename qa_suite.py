@@ -265,6 +265,13 @@ class QATestRunner:
             task = model_downloader.DownloadTask(sample_model, dest_dir=os.path.join(APP_DIR, "models", "checkpoints"))
             self.record_test(cat, "Atomic Temp File Naming", task.temp_path.endswith(".download"), f"Temp path: {task.temp_path}")
 
+            # Security: Path Traversal Prevention
+            dest_dir = os.path.join(APP_DIR, "models", "checkpoints")
+            traversal_model = {"filename": "../../evil.safetensors"}
+            sec_task = model_downloader.DownloadTask(traversal_model, dest_dir=dest_dir)
+            expected_dest = os.path.normpath(os.path.join(dest_dir, "evil.safetensors"))
+            self.record_test(cat, "Path Traversal Prevention", sec_task.dest_path == expected_dest, f"Sanitized path: {sec_task.dest_path}")
+
             # Test checkpoint counting
             ckpt_count = model_downloader.get_installed_checkpoint_count()
             self.record_test(cat, "Installed Checkpoint Indexer", ckpt_count >= 0, f"Indexed {ckpt_count} installed checkpoint files")
