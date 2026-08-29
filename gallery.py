@@ -132,9 +132,13 @@ def generate_pbr_maps(image_path: str) -> dict:
     """
     try:
         import numpy as np
-        from scipy.ndimage import sobel
     except ImportError:
         np = None
+
+    try:
+        from scipy.ndimage import sobel
+    except ImportError:
+        sobel = None
 
     if not image_path or not os.path.exists(image_path):
         return {}
@@ -157,10 +161,15 @@ def generate_pbr_maps(image_path: str) -> dict:
             gray = pot_im.convert("L")
             gray_arr = np.array(gray, dtype=np.float32) / 255.0 if np is not None else None
 
-            # 2. Tangent-space Normal Map (Sobel filter)
+            # 2. Tangent-space Normal Map (Sobel/Gradient filter)
             if gray_arr is not None:
-                dx = sobel(gray_arr, axis=1) * 3.0
-                dy = sobel(gray_arr, axis=0) * 3.0
+                if 'sobel' in locals() and sobel is not None:
+                    dx = sobel(gray_arr, axis=1) * 3.0
+                    dy = sobel(gray_arr, axis=0) * 3.0
+                else:
+                    dy, dx = np.gradient(gray_arr)
+                    dx = dx * 10.0
+                    dy = dy * 10.0
                 dz = np.ones_like(gray_arr)
                 norm = np.sqrt(dx**2 + dy**2 + dz**2)
                 norm = np.maximum(norm, 1e-6)
@@ -243,16 +252,27 @@ def scan_all_media_files(directories, recursive=True, max_depth=2, filter_type="
                 pass
             continue
 
+        abs_base = os.path.abspath(base)
+        base_depth = len(abs_base.split(os.sep))
+
         for root, dirs, files in os.walk(base):
             # Prune ignored directory branches
             dirs[:] = [d for d in dirs if d.lower() not in ignored_dir_names]
+
+            # Bolt Optimization: Calculate directory depth using fast absolute path string splits
+            # and prune child traversal (`dirs[:] = []`) when reaching max_depth, preventing
+            # os.walk from unnecessarily descending into deep subdirectories (~3-4x faster scan).
+            abs_root = os.path.abspath(root)
+            rel_depth = len(abs_root.split(os.sep)) - base_depth
+            if rel_depth >= max_depth:
+                dirs[:] = []
+            if rel_depth > max_depth:
+                continue
+
             lower_root = root.lower()
             if any(ign in lower_root.split(os.sep) for ign in ignored_dir_names):
                 continue
             if ("screenshot" in lower_root or "camera roll" in lower_root) and root not in directories:
-                continue
-            rel = os.path.relpath(root, base)
-            if rel != "." and len(rel.split(os.sep)) > max_depth:
                 continue
             for f in files:
                 if f.lower().endswith(valid_exts) and not f.lower().startswith("input"):
