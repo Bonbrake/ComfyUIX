@@ -116,10 +116,20 @@ class AutoHideScrollFrame(ctk.CTkFrame):
 
 class ToolTip:
     """Hover tooltip popup manager for controls and inputs."""
+    enabled = True
+
     def __init__(self, widget, text=None, title=None, delay=400, enabled_var=None, description=None):
+        if isinstance(text, (tuple, list)) and len(text) >= 2:
+            self.title = str(text[0])
+            self.text = str(text[1])
+        elif isinstance(title, (tuple, list)) and len(title) >= 2:
+            self.title = str(title[0])
+            self.text = str(title[1])
+        else:
+            self.title = str(title) if title else None
+            self.text = str(text or description or "")
+
         self.widget = widget
-        self.text = text or description or ""
-        self.title = title
         self.delay = delay
         self.enabled_var = enabled_var
         self.tip_window = None
@@ -127,11 +137,18 @@ class ToolTip:
         try:
             widget.bind("<Enter>", self.schedule, add="+")
             widget.bind("<Leave>", self.hide, add="+")
+            widget.bind("<ButtonPress>", self._on_click, add="+")
         except Exception:
             pass
 
+    def _on_click(self, event=None):
+        self.unschedule()
+        self.hide_force()
+
     def schedule(self, event=None):
-        if self.enabled_var and self.enabled_var.get() == "0":
+        if not ToolTip.enabled:
+            return
+        if self.enabled_var and self.enabled_var.get() in ("0", False):
             return
         self.unschedule()
         try:
@@ -148,6 +165,10 @@ class ToolTip:
             self.id = None
 
     def show(self):
+        if not ToolTip.enabled:
+            return
+        if self.enabled_var and self.enabled_var.get() in ("0", False):
+            return
         if self.tip_window or not self.text:
             return
         try:
@@ -206,6 +227,9 @@ class ToolTip:
             pass
 
         self.unschedule()
+        self.hide_force()
+
+    def hide_force(self):
         if self.tip_window:
             try:
                 self.tip_window.destroy()
