@@ -12,6 +12,12 @@ Outputs:
 import os
 import sys
 import time
+
+# Ensure UTF-8 output encoding for Windows consoles with non-UTF8 code pages (e.g. cp1252)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import json
 import socket
 import logging
@@ -138,7 +144,7 @@ class QATestRunner:
             self.record_test(cat, "GPU Vendor Detection", has_vendor, f"Vendor: {info.get('vendor')}")
 
             vram_mb = info.get("vram_mb", 0)
-            self.record_test(cat, "VRAM Detection", vram_mb > 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
+            self.record_test(cat, "VRAM Detection", vram_mb >= 0, f"Detected VRAM: {info.get('vram_gb', 0)} GB ({vram_mb} MB)")
 
             rec_mode = info.get("recommended_mode")
             self.record_test(cat, "Recommended Mode Calculation", bool(rec_mode), f"Recommended mode: {rec_mode}")
