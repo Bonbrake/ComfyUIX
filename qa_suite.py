@@ -12,6 +12,12 @@ Outputs:
 import os
 import sys
 import time
+
+# Ensure UTF-8 output encoding for Windows consoles with non-UTF8 code pages (e.g. cp1252)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import json
 import socket
 import logging
