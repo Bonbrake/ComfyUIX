@@ -134,19 +134,10 @@ class ToolTip:
         self.enabled_var = enabled_var
         self.tip_window = None
         self.id = None
-        self._bind_recursive(widget)
-
-    def _bind_recursive(self, w):
-        """Bind Enter/Leave/Click on w and every descendant."""
         try:
-            w.bind("<Enter>", self.schedule, add="+")
-            w.bind("<Leave>", self.hide, add="+")
-            w.bind("<ButtonPress>", self._on_click, add="+")
-        except Exception:
-            pass
-        try:
-            for child in w.winfo_children():
-                self._bind_recursive(child)
+            widget.bind("<Enter>", self.schedule, add="+")
+            widget.bind("<Leave>", self.hide, add="+")
+            widget.bind("<ButtonPress>", self._on_click, add="+")
         except Exception:
             pass
 
