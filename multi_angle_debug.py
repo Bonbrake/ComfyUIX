@@ -20,6 +20,13 @@ import struct
 import numpy as np
 from PIL import Image
 
+# Reconfigure stdout for Windows console UTF-8 support
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -29,8 +36,12 @@ results = []
 
 def record(category, test_name, passed, details=""):
     results.append({"category": category, "test": test_name, "passed": passed, "details": details})
-    status_str = "✔ PASS" if passed else "✖ FAIL"
-    print(f"[{status_str}] [{category}] {test_name}: {details}")
+    status_str = "PASS" if passed else "FAIL"
+    symbol_icon = "✔" if passed else "✖"
+    try:
+        print(f"[{symbol_icon} {status_str}] [{category}] {test_name}: {details}")
+    except UnicodeEncodeError:
+        print(f"[{status_str}] [{category}] {test_name}: {details}")
 
 # =========================================================================
 # VECTOR 1: Static AST & Duplicate Method Scan Across Codebase

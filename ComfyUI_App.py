@@ -8860,7 +8860,7 @@ class ComfyUIApp:
 
         # 2. ComfyUI /system_stats
         try:
-            r = requests.get(COMFYUI_URL + "/system_stats", timeout=1.0)
+            r = requests.get(COMFYUI_URL + "/system_stats", timeout=0.5)
             if r.status_code == 200:
                 devs = r.json().get("devices", [])
                 if devs:
