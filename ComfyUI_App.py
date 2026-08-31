@@ -544,6 +544,23 @@ def _open_file(path):
         pass
 
 
+def _reveal_in_explorer(fpath):
+    """Reveal a file in the system file manager using safe argument lists."""
+    if not fpath:
+        return
+    try:
+        import subprocess, platform as _pf
+        norm_path = os.path.normpath(fpath)
+        if _pf.system() == "Windows":
+            subprocess.Popen(["explorer", f"/select,{norm_path}"])
+        elif _pf.system() == "Darwin":
+            subprocess.Popen(["open", "-R", norm_path])
+        else:
+            subprocess.Popen(["xdg-open", os.path.dirname(norm_path)])
+    except Exception:
+        pass
+
+
 def _open_folder(path):
     """Open a folder in the system file explorer."""
     try:
@@ -2424,7 +2441,7 @@ class ComfyUIApp:
             ctk.CTkButton(btn_box, text="📁 Reveal in Explorer", height=30, corner_radius=6,
                           fg_color=BG_CARD_ALT, text_color=TEXT, border_width=1, border_color=BORDER_MUTED,
                           hover_color=BRAND_HOVER, font=ctk.CTkFont(family="Consolas", size=10, weight="bold"),
-                          command=lambda: subprocess.Popen(f'explorer /select,"{fpath}"')).pack(fill="x", pady=3)
+                          command=lambda: _reveal_in_explorer(fpath)).pack(fill="x", pady=3)
 
             ctk.CTkButton(btn_box, text="🗑 Delete File", height=30, corner_radius=6,
                           fg_color="#3A1114", text_color="#FF6B6B", border_width=1, border_color="#552222",
@@ -2627,7 +2644,7 @@ class ComfyUIApp:
             ctk.CTkButton(act_bar, text="📁", height=24, width=28, corner_radius=4,
                           fg_color=BG_CARD_ALT, hover_color=BRAND_HOVER, text_color=TEXT,
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
-                          command=lambda fp=fpath: subprocess.Popen(f'explorer /select,"{fp}"')).grid(row=0, column=2, padx=2, sticky="ew")
+                          command=lambda fp=fpath: _reveal_in_explorer(fp)).grid(row=0, column=2, padx=2, sticky="ew")
 
             ctk.CTkButton(act_bar, text="🗑", height=24, width=28, corner_radius=4,
                           fg_color="#2A1114", hover_color="#551111", text_color="#FF6B6B",
