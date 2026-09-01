@@ -2624,15 +2624,19 @@ class ComfyUIApp:
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
                           command=lambda fp=fpath, fn=fname: self._show_gallery_lightbox(fp, fn)).grid(row=0, column=1, padx=2, sticky="ew")
 
-            ctk.CTkButton(act_bar, text="📁", height=24, width=28, corner_radius=4,
+            folder_btn = ctk.CTkButton(act_bar, text="📁", height=24, width=28, corner_radius=4,
                           fg_color=BG_CARD_ALT, hover_color=BRAND_HOVER, text_color=TEXT,
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
-                          command=lambda fp=fpath: subprocess.Popen(f'explorer /select,"{fp}"')).grid(row=0, column=2, padx=2, sticky="ew")
+                          command=lambda fp=fpath: subprocess.Popen(f'explorer /select,"{fp}"'))
+            folder_btn.grid(row=0, column=2, padx=2, sticky="ew")
+            ToolTip(folder_btn, ("Reveal File", "Open containing folder and highlight this image in File Explorer."))
 
-            ctk.CTkButton(act_bar, text="🗑", height=24, width=28, corner_radius=4,
+            del_btn = ctk.CTkButton(act_bar, text="🗑", height=24, width=28, corner_radius=4,
                           fg_color="#2A1114", hover_color="#551111", text_color="#FF6B6B",
                           font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
-                          command=lambda fp=fpath: self._delete_gallery_file(fp)).grid(row=0, column=3, padx=2, sticky="ew")
+                          command=lambda fp=fpath: self._delete_gallery_file(fp))
+            del_btn.grid(row=0, column=3, padx=2, sticky="ew")
+            ToolTip(del_btn, ("Delete Image", "Permanently remove this image file from disk."))
 
             # Click & hover bindings
             for w in (card, img_container):
