@@ -17,8 +17,13 @@ import time
 import tkinter as tk
 from PIL import Image, ImageFilter, ImageTk, ImageDraw, ImageFont
 
-user32 = ctypes.windll.user32
-GDI32 = ctypes.windll.gdi32
+if hasattr(ctypes, "windll"):
+    user32 = ctypes.windll.user32
+    GDI32 = ctypes.windll.gdi32
+else:
+    user32 = None
+    GDI32 = None
+
 SRCCOPY = 0x00CC0020
 CAPTUREBLT = 0x40000000
 BI_RGB = 0
@@ -46,6 +51,8 @@ def _get_matrix_font(size=14):
 
 def _capture_desktop_region(rx, ry, w, h):
     """Legacy desktop capture — retained for API compatibility, not actively used."""
+    if not user32 or not GDI32:
+        return Image.new("RGBA", (max(1, w), max(1, h)), (4, 10, 6, 255))
     try:
         hwnd_desk = user32.GetDesktopWindow()
         hdc_screen = user32.GetDC(hwnd_desk)
