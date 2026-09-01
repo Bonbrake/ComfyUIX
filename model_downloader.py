@@ -435,7 +435,12 @@ class DownloadTask:
     def __init__(self, model_info: Dict[str, Any], dest_dir: str, on_progress: Optional[Callable] = None, on_complete: Optional[Callable] = None):
         self.model_info = model_info
         self.dest_dir = dest_dir
-        self.dest_path = os.path.join(dest_dir, model_info["filename"])
+        # Security: Prevent path traversal by sanitizing filename to basename only
+        raw_filename = str(model_info.get("filename", "model.safetensors")).replace("\\", "/")
+        safe_filename = os.path.basename(raw_filename)
+        if not safe_filename or safe_filename in (".", ".."):
+            safe_filename = "model.safetensors"
+        self.dest_path = os.path.join(dest_dir, safe_filename)
         self.temp_path = self.dest_path + ".download"
         self.on_progress = on_progress
         self.on_complete = on_complete
