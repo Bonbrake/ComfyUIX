@@ -13,6 +13,9 @@ Tests 6 unique diagnostic vectors:
 import sys
 import os
 import ast
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import json
 import math
 import io
