@@ -132,7 +132,16 @@ def generate_pbr_maps(image_path: str) -> dict:
     """
     try:
         import numpy as np
-        from scipy.ndimage import sobel
+        try:
+            from scipy.ndimage import sobel
+        except ImportError:
+            def sobel(a, axis):
+                # Pure numpy 3x3 Sobel kernel gradient fallback
+                gx = np.pad(a, 1, mode='edge')
+                if axis == 1: # Horizontal gradient
+                    return (gx[:-2, 2:] + 2*gx[1:-1, 2:] + gx[2:, 2:]) - (gx[:-2, :-2] + 2*gx[1:-1, :-2] + gx[2:, :-2])
+                else: # Vertical gradient
+                    return (gx[2:, :-2] + 2*gx[2:, 1:-1] + gx[2:, 2:]) - (gx[:-2, :-2] + 2*gx[:-2, 1:-1] + gx[:-2, 2:])
     except ImportError:
         np = None
 
