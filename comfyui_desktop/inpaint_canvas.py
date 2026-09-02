@@ -6,6 +6,7 @@ import os
 import tkinter as tk
 import customtkinter as ctk
 from PIL import Image, ImageTk, ImageDraw, ImageOps
+from comfyui_desktop.widgets import ToolTip
 
 class InpaintCanvas(ctk.CTkFrame):
     """Interactive Inpaint Canvas with live brush mask rendering."""
@@ -35,11 +36,19 @@ class InpaintCanvas(ctk.CTkFrame):
                                       fg_color="#1C3D2E", hover_color="#2B5C45", text_color="#FFFFFF", command=self._toggle_erase)
         self.erase_btn.pack(side="left", padx=4)
         
-        ctk.CTkButton(tb, text="🔄 Invert", width=65, height=24, font=ctk.CTkFont(family="Consolas", size=10),
-                       fg_color="#1C3D2E", hover_color="#2B5C45", text_color="#FFFFFF", command=self.invert_mask).pack(side="left", padx=4)
+        self.invert_btn = ctk.CTkButton(tb, text="🔄 Invert", width=65, height=24, font=ctk.CTkFont(family="Consolas", size=10),
+                                       fg_color="#1C3D2E", hover_color="#2B5C45", text_color="#FFFFFF", command=self.invert_mask)
+        self.invert_btn.pack(side="left", padx=4)
                        
-        ctk.CTkButton(tb, text="🧹 Clear", width=60, height=24, font=ctk.CTkFont(family="Consolas", size=10),
-                       fg_color="#3D1C1C", hover_color="#5C2B2B", text_color="#FFFFFF", command=self.clear_mask).pack(side="left", padx=4)
+        self.clear_btn = ctk.CTkButton(tb, text="🧹 Clear", width=60, height=24, font=ctk.CTkFont(family="Consolas", size=10),
+                                      fg_color="#3D1C1C", hover_color="#5C2B2B", text_color="#FFFFFF", command=self.clear_mask)
+        self.clear_btn.pack(side="left", padx=4)
+
+        # Attach tooltips to toolbar controls for accessibility & micro-UX
+        ToolTip(self.slider, title="Brush Size", description="Adjust inpaint mask brush diameter (4px to 100px).")
+        ToolTip(self.erase_btn, title="Brush Mode", description="Toggle between painting mask coverage and erasing mask areas.")
+        ToolTip(self.invert_btn, title="Invert Mask", description="Invert active inpaint mask areas across the canvas.")
+        ToolTip(self.clear_btn, title="Clear Mask", description="Reset inpaint mask and erase all painted regions.")
 
         # Drawing Canvas
         self.canvas = tk.Canvas(self, width=self.canvas_w, height=self.canvas_h, bg="#040A06", highlightthickness=0, cursor="crosshair")
