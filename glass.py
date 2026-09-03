@@ -17,8 +17,8 @@ import time
 import tkinter as tk
 from PIL import Image, ImageFilter, ImageTk, ImageDraw, ImageFont
 
-user32 = ctypes.windll.user32
-GDI32 = ctypes.windll.gdi32
+user32 = getattr(getattr(ctypes, "windll", None), "user32", None)
+GDI32 = getattr(getattr(ctypes, "windll", None), "gdi32", None)
 SRCCOPY = 0x00CC0020
 CAPTUREBLT = 0x40000000
 BI_RGB = 0
@@ -46,6 +46,8 @@ def _get_matrix_font(size=14):
 
 def _capture_desktop_region(rx, ry, w, h):
     """Legacy desktop capture — retained for API compatibility, not actively used."""
+    if not user32 or not GDI32:
+        return Image.new("RGBA", (max(1, w), max(1, h)), (4, 10, 6, 255))
     try:
         hwnd_desk = user32.GetDesktopWindow()
         hdc_screen = user32.GetDC(hwnd_desk)
@@ -252,11 +254,14 @@ class MatrixRainCanvas(tk.Canvas):
             for y in range(0, h, grid_step):
                 self.create_line(0, y, w, y, fill="#08140C", width=1, tags="grid")
 
-            # Pre-allocate text items (one per visible cell)
+            # Pre-allocate text items (one per visible cell) and track item text in Python
+            # to eliminate thousands of Tcl IPC itemcget calls per second.
             self._items = []
+            self._item_texts = []
             canvas_font = (self._font_family, self.font_size)
             for col in range(self._cols):
                 col_items = []
+                col_texts = []
                 x = col * col_w + col_w // 2
                 for row in range(self._rows + 2):  # +2 for overflow
                     y = row * row_h
@@ -265,7 +270,9 @@ class MatrixRainCanvas(tk.Canvas):
                         anchor="center", tags="rain"
                     )
                     col_items.append(item_id)
+                    col_texts.append("")
                 self._items.append(col_items)
+                self._item_texts.append(col_texts)
 
             # Initialize stream state for each column
             self._streams = []
@@ -307,9 +314,10 @@ class MatrixRainCanvas(tk.Canvas):
         max_row = self._rows + 1
 
         for col_idx, stream in enumerate(self._streams):
-            if col_idx >= len(self._items):
+            if col_idx >= len(self._items) or col_idx >= getattr(self, "_item_texts", []).__len__():
                 break
             col_items = self._items[col_idx]
+            col_texts = self._item_texts[col_idx]
 
             # Advance position
             stream["y"] += stream["speed"] * speed_mult
@@ -339,16 +347,18 @@ class MatrixRainCanvas(tk.Canvas):
 
                     try:
                         self.itemconfigure(item_id, text=char, fill=color)
+                        col_texts[row_idx] = char
                     except tk.TclError:
                         return
                 else:
                     # Clear cell (transparent = match background)
-                    try:
-                        cur = self.itemcget(item_id, "text")
-                        if cur:
+                    # Performance optimization: check local Python state instead of calling itemcget over Tcl IPC
+                    if col_texts[row_idx] != "":
+                        try:
                             self.itemconfigure(item_id, text="", fill="#040A06")
-                    except tk.TclError:
-                        return
+                            col_texts[row_idx] = ""
+                        except tk.TclError:
+                            return
 
             # Reset stream when it falls fully off screen
             if head_y - slen > max_row:
