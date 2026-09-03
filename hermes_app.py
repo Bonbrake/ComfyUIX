@@ -898,6 +898,7 @@ class HermesMatrixApp(QWidget):
 
         # Model picker (tiered)
         self.model_combo = QComboBox()
+        self.model_combo.setToolTip("Select Local LLM AI model tier or unload model to free VRAM")
         self.model_combo.setStyleSheet(
             "QComboBox{background:rgba(8,20,16,0.90); color:#39ff8c; border:1px solid "
             "rgba(57,255,140,0.45); border-radius:8px; padding:6px; font:12px 'Consolas';}"
@@ -942,10 +943,12 @@ class HermesMatrixApp(QWidget):
         btn_row = QHBoxLayout()
         btn_row.setSpacing(6)
         self.clear_btn = QPushButton("CLEAR VRAM")
+        self.clear_btn.setToolTip("Unload models and purge PyTorch CUDA memory cache")
         self.clear_btn.setStyleSheet(self._btn("#39ff8c"))
         self.clear_btn.clicked.connect(self._on_clear)
 
         self.studio_btn = QPushButton("LAUNCH STUDIO")
+        self.studio_btn.setToolTip("Launch main ComfyUIX Studio desktop application")
         self.studio_btn.setStyleSheet(self._btn("#39ff8c"))
         def _launch_studio():
             import subprocess
@@ -972,6 +975,7 @@ class HermesMatrixApp(QWidget):
         self.studio_btn.clicked.connect(_launch_studio)
 
         self.webui_btn = QPushButton("OPEN WEB UI")
+        self.webui_btn.setToolTip("Open ComfyUI web interface in browser")
         self.webui_btn.setStyleSheet(self._btn("#39ff8c"))
         def _launch_webui():
             try:
@@ -986,9 +990,11 @@ class HermesMatrixApp(QWidget):
         self.webui_btn.clicked.connect(_launch_webui)
 
         self.feed_btn = QPushButton("CLEAR FEED")
+        self.feed_btn.setToolTip("Clear system console log feed")
         self.feed_btn.setStyleSheet(self._btn("#39ff8c"))
         self.feed_btn.clicked.connect(lambda: self.console.clear())
         self.hide_btn = QPushButton("HIDE TO TRAY")
+        self.hide_btn.setToolTip("Minimize Matrix HUD to system tray")
         self.hide_btn.setStyleSheet(self._btn("#39ff8c"))
         self.hide_btn.clicked.connect(self.hide)
 
