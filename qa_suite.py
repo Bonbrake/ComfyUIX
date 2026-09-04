@@ -268,6 +268,12 @@ class QATestRunner:
             # Test checkpoint counting
             ckpt_count = model_downloader.get_installed_checkpoint_count()
             self.record_test(cat, "Installed Checkpoint Indexer", ckpt_count >= 0, f"Indexed {ckpt_count} installed checkpoint files")
+
+            # Test path traversal prevention in custom url download
+            trav_task = model_downloader.download_custom_url("https://example.com/model.safetensors", custom_name="../../../etc/passwd", model_type="checkpoint")
+            expected_filename = "passwd.safetensors"
+            is_sanitized = os.path.basename(trav_task.dest_path) == expected_filename and os.path.dirname(trav_task.dest_path) == model_downloader.get_checkpoints_dir()
+            self.record_test(cat, "Path Traversal Sanitization Guard", is_sanitized, f"Sanitized dest_path: {trav_task.dest_path}")
         except Exception as e:
             self.record_test(cat, "Model Downloader Exception", False, str(e))
 

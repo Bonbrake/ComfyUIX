@@ -435,7 +435,11 @@ class DownloadTask:
     def __init__(self, model_info: Dict[str, Any], dest_dir: str, on_progress: Optional[Callable] = None, on_complete: Optional[Callable] = None):
         self.model_info = model_info
         self.dest_dir = dest_dir
-        self.dest_path = os.path.join(dest_dir, model_info["filename"])
+        # Security: Sanitize filename to prevent path traversal attacks
+        filename = os.path.basename(str(model_info.get("filename", "")).replace("\\", "/"))
+        if not filename or filename in (".", ".."):
+            filename = "downloaded_model.safetensors"
+        self.dest_path = os.path.join(dest_dir, filename)
         self.temp_path = self.dest_path + ".download"
         self.on_progress = on_progress
         self.on_complete = on_complete
@@ -622,6 +626,11 @@ def download_custom_url(url: str, custom_name: str = "", model_type: str = "chec
         filename = custom_name
         if not filename.endswith((".safetensors", ".ckpt", ".pth", ".bin")):
             filename += ".safetensors"
+
+    # Security: Sanitize filename to prevent path traversal attacks (e.g., ../../../etc/passwd)
+    filename = os.path.basename(filename.replace("\\", "/"))
+    if not filename or filename in (".", ".."):
+        filename = "custom_model.safetensors"
 
     dest_dir = get_model_target_dir(model_type)
 
