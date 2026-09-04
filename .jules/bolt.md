@@ -1,0 +1,3 @@
+## 2026-09-04 - Eliminate redundant stat syscalls in directory traversals & SciPy fallback
+**Learning:** `os.walk()` yields filenames directly from directory entries, so invoking `os.path.isfile()` inside `os.walk` loops adds redundant blocking disk `stat()` syscalls for every file. Additionally, optional heavy dependencies like `scipy` can fail silently or break feature paths unless a fast vectorized NumPy fallback (`np.gradient`) is provided.
+**Action:** Remove `os.path.isfile()` checks inside `os.walk` loops and provide pure NumPy vectorized fallbacks when SciPy is not in `requirements.txt`.
