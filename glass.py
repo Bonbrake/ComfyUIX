@@ -17,8 +17,8 @@ import time
 import tkinter as tk
 from PIL import Image, ImageFilter, ImageTk, ImageDraw, ImageFont
 
-user32 = ctypes.windll.user32
-GDI32 = ctypes.windll.gdi32
+user32 = getattr(ctypes, "windll", None).user32 if hasattr(ctypes, "windll") else None
+GDI32 = getattr(ctypes, "windll", None).gdi32 if hasattr(ctypes, "windll") else None
 SRCCOPY = 0x00CC0020
 CAPTUREBLT = 0x40000000
 BI_RGB = 0
@@ -198,8 +198,9 @@ class MatrixRainCanvas(tk.Canvas):
         self._last_time = 0.0
         self._cols = 0
         self._rows = 0
-        self._streams = []  # list of stream dicts
-        self._items = []    # pre-allocated canvas text item IDs
+        self._streams = []     # list of stream dicts
+        self._items = []       # pre-allocated canvas text item IDs
+        self._item_states = [] # state cache: (char, color) per item ID
         self._rng = random.Random(42)
 
         # Resolve font family for canvas text (prefer MS Gothic for Katakana)
@@ -254,9 +255,11 @@ class MatrixRainCanvas(tk.Canvas):
 
             # Pre-allocate text items (one per visible cell)
             self._items = []
+            self._item_states = []
             canvas_font = (self._font_family, self.font_size)
             for col in range(self._cols):
                 col_items = []
+                col_states = []
                 x = col * col_w + col_w // 2
                 for row in range(self._rows + 2):  # +2 for overflow
                     y = row * row_h
@@ -265,7 +268,9 @@ class MatrixRainCanvas(tk.Canvas):
                         anchor="center", tags="rain"
                     )
                     col_items.append(item_id)
+                    col_states.append(("", "#040A06"))
                 self._items.append(col_items)
+                self._item_states.append(col_states)
 
             # Initialize stream state for each column
             self._streams = []
@@ -310,6 +315,7 @@ class MatrixRainCanvas(tk.Canvas):
             if col_idx >= len(self._items):
                 break
             col_items = self._items[col_idx]
+            col_states = self._item_states[col_idx] if col_idx < len(self._item_states) else None
 
             # Advance position
             stream["y"] += stream["speed"] * speed_mult
@@ -324,7 +330,7 @@ class MatrixRainCanvas(tk.Canvas):
             head_y = stream["y"]
             slen = stream["length"]
 
-            # Update each visible cell in this column
+            # Update each visible cell in this column using state caching to skip unchanged cells
             for row_idx, item_id in enumerate(col_items):
                 dist_from_head = head_y - row_idx
                 if 0 <= dist_from_head < slen:
@@ -336,17 +342,15 @@ class MatrixRainCanvas(tk.Canvas):
                     brightness = 1.0 - (dist_from_head / slen)
                     shade_idx = min(num_shades - 1, int(brightness * (num_shades - 1)))
                     color = self._SHADES[shade_idx]
+                else:
+                    char = ""
+                    color = "#040A06"
 
+                desired = (char, color)
+                if col_states is not None and col_states[row_idx] != desired:
+                    col_states[row_idx] = desired
                     try:
                         self.itemconfigure(item_id, text=char, fill=color)
-                    except tk.TclError:
-                        return
-                else:
-                    # Clear cell (transparent = match background)
-                    try:
-                        cur = self.itemcget(item_id, "text")
-                        if cur:
-                            self.itemconfigure(item_id, text="", fill="#040A06")
                     except tk.TclError:
                         return
 
