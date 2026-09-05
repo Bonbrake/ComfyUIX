@@ -127,6 +127,8 @@ class ToolTip:
         try:
             widget.bind("<Enter>", self.schedule, add="+")
             widget.bind("<Leave>", self.hide, add="+")
+            widget.bind("<ButtonPress>", self.force_hide, add="+")
+            widget.bind("<Escape>", self.force_hide, add="+")
         except Exception:
             pass
 
@@ -188,6 +190,8 @@ class ToolTip:
             if self.title:
                 tk.Label(frame, text=self.title, font=("Segoe UI", 9, "bold"), fg="#F3F0FF", bg="#1D172E", anchor="w", justify="left").pack(anchor="w", pady=(0, 2))
             tk.Label(frame, text=self.text, font=("Segoe UI", 8), fg="#A799C7", bg="#1D172E", wraplength=220, anchor="w", justify="left").pack(anchor="w")
+            tw.bind("<ButtonPress>", self.force_hide, add="+")
+            tw.bind("<Escape>", self.force_hide, add="+")
             tw.update_idletasks()
         except Exception:
             self.tip_window = None
@@ -205,6 +209,9 @@ class ToolTip:
         except Exception:
             pass
 
+        self.force_hide(event)
+
+    def force_hide(self, event=None):
         self.unschedule()
         if self.tip_window:
             try:
